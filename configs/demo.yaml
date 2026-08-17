@@ -1,0 +1,54 @@
+model:
+  in_channels: 32
+  hidden_size: 768
+  depth: 18
+  num_heads: 12
+  mlp_ratio: 4.0
+  learn_sigma: false
+  use_pos: true
+  latent_num: 48
+
+decoder:
+  max_face: 50
+  latent_dim: 32
+  d_model: 768
+  nhead: 8
+  dropout: 0.1
+  mem_self_depth: 2
+  face_cross_depth: 6
+  edge_cross_depth: 6
+  latent_len: 48
+  use_mem_pos: false
+  use_mem_sa: true
+  use_softplus: false
+  use_sin: false
+
+sampling:
+  num_train_timesteps: 1000
+  beta_start: 0.0001
+  beta_end: 0.02
+  beta_schedule: squaredcos_cap_v2
+  prediction_type: sample
+  variance_type: fixed_small
+  num_inference_steps: 400
+  eta: 0.2
+
+variants:
+  "4-30":
+    face_min: 4
+    face_max: 30
+    vae_checkpoint: checkpoints/deepcad/hifi-brep-decoder-4-30.pt
+    diffusion_checkpoint: checkpoints/deepcad/hifi-brep-diffusion-4-30.pt
+    diffusion_state: online/model
+  "7-30":
+    face_min: 7
+    face_max: 30
+    vae_checkpoint: checkpoints/deepcad/hifi-brep-decoder-7-30.pt
+    diffusion_checkpoint: checkpoints/deepcad/hifi-brep-diffusion-7-30.pt
+    diffusion_state: online/model
+  "abc-4-50":
+    face_min: 4
+    face_max: 50
+    vae_checkpoint: checkpoints/abc/hifi-brep-decoder-4-50.pt
+    diffusion_checkpoint: checkpoints/abc/hifi-brep-diffusion-4-50.pt
+    diffusion_state: ema/model

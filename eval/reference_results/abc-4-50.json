@@ -1,0 +1,39 @@
+{
+  "format_version": 1,
+  "variant": "abc-4-50",
+  "face_range": [
+    4,
+    50
+  ],
+  "checkpoints": {
+    "decoder": {
+      "filename": "hifi-brep-decoder-4-50.pt",
+      "state": "ema"
+    },
+    "diffusion": {
+      "filename": "hifi-brep-diffusion-4-50.pt",
+      "state": "ema"
+    }
+  },
+  "protocol": {
+    "num_samples": 4096,
+    "batch_size": 32,
+    "base_seed": 42,
+    "num_inference_steps": 400,
+    "eta": 0.2,
+    "dtype": "float32",
+    "reconstruction_criterion": "closed_shell_and_nonzero_volume",
+    "save_steps": "none"
+  },
+  "metrics": {
+    "in_face_range_count": 4074,
+    "closed_solid_count": 2747,
+    "qualified_count": 2725,
+    "qualified_rate": 0.665283203125,
+    "failure_counts": {
+      "empty_prediction": 0,
+      "reconstruction_exception": 1319,
+      "not_closed_or_zero_volume": 30
+    }
+  }
+}

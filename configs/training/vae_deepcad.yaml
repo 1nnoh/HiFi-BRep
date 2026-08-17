@@ -1,0 +1,84 @@
+format_version: 1
+task: vae
+variant: 4-30
+
+data:
+  manifest: datasets/manifests/deepcad-v1.json
+  train_split: train
+  val_split: val
+  bbox_scale: 3.0
+  augment: false
+
+training:
+  epochs: 3000
+  per_device_batch_size: 96
+  gradient_accumulation_steps: 1
+  precision: "bf16"
+  seed: 42
+  num_workers: 16
+  pin_memory: false
+  drop_last: true
+  max_grad_norm: 1.0
+  log_every_updates: 10
+
+optimizer:
+  type: adamw
+  learning_rate: 0.0001
+  weight_decay: 0.01
+  betas: [0.9, 0.99]
+  eps: 0.00000001
+
+scheduler:
+  warmup_fraction: 0.1
+  initial_factor: 0.01
+  final_factor: 0.01
+
+ema:
+  decay: 0.995
+  update_every: 10
+  update_after_step: 100
+  inv_gamma: 1.0
+  power: 0.6666666666666666
+  min_value: 0.0
+
+validation:
+  every_epochs: 10
+  max_batches: -1
+  state: online
+  selection_metric: loss_total
+  selection_mode: min
+  deterministic_seed: 42
+
+checkpoint:
+  latest_every_epochs: 10
+  milestone_every_epochs: 100
+
+model:
+  max_face: 50
+  enc_d_model: 768
+  enc_nhead: 8
+  enc_dropout: 0.1
+  enc_self_depth: 6
+  enc_cross_depth: 2
+  latent_len: 48
+  learnable_latent: true
+  dec_d_model: 768
+  dec_nhead: 8
+  dec_dropout: 0.1
+  mem_self_depth: 2
+  face_cross_depth: 6
+  edge_cross_depth: 6
+  use_mem_pos: false
+  use_mem_sa: true
+  use_softplus: false
+  use_sin: false
+  latent_dim: 32
+  w_kl: 0.00005
+  w_num_face: 1.0
+  w_num_edge: 0.7
+  w_adj_face: 5.0
+  w_face_pos: 28.0
+  w_edge_bbox: 22.0
+  w_edge_corners: 20.0
+  w_face_z: 20.0
+  w_edge_z: 16.0

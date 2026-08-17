@@ -1,0 +1,15 @@
+format_version: 1
+
+execution:
+  reconstruction_mode: batched
+  reconstruction_workers: 8
+
+protocol:
+  num_samples: 4096
+  batch_size: 32
+  base_seed: 42
+  num_inference_steps: 400
+  eta: 0.2
+  dtype: float32
+  reconstruction_criterion: closed_shell_and_nonzero_volume
+  save_steps: none

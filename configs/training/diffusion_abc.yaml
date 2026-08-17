@@ -1,0 +1,111 @@
+format_version: 1
+task: diffusion
+variant: abc-4-50
+
+data:
+  manifest: datasets/manifests/abc-v1.json
+  train_split: train
+  val_split: val
+  bbox_scale: 3.0
+  augment: false
+
+vae_source:
+  variant: abc-4-50
+  state: ema
+
+training:
+  epochs: 1500
+  per_device_batch_size: 512
+  gradient_accumulation_steps: 1
+  precision: "bf16"
+  seed: 42
+  num_workers: 16
+  pin_memory: false
+  drop_last: true
+  max_grad_norm: 1.0
+  log_every_updates: 10
+
+optimizer:
+  type: adam
+  learning_rate: 0.0001
+  weight_decay: 0.0
+  betas: [0.9, 0.99]
+  eps: 0.00000001
+
+scheduler:
+  warmup_epochs: 30
+  initial_factor: 0.01
+  final_factor: 0.01
+
+ema:
+  decay: 0.995
+  update_every: 10
+  update_after_step: 100
+  inv_gamma: 1.0
+  power: 0.6666666666666666
+  min_value: 0.0
+
+validation:
+  every_epochs: 10
+  max_batches: -1
+  state: ema
+  selection_metric: loss
+  selection_mode: min
+  deterministic_seed: 42
+
+checkpoint:
+  latest_every_epochs: 10
+  milestone_every_epochs: 100
+
+release_artifact:
+  epoch: 500
+  state: ema
+
+diffusion:
+  num_train_timesteps: 1000
+  beta_start: 0.0001
+  beta_end: 0.02
+  beta_schedule: squaredcos_cap_v2
+  prediction_type: sample
+  variance_type: fixed_small
+  sample_posterior: true
+
+model:
+  in_channels: 32
+  hidden_size: 768
+  depth: 18
+  num_heads: 12
+  mlp_ratio: 4.0
+  learn_sigma: false
+  use_pos: true
+  latent_num: 48
+
+vae_model:
+  max_face: 50
+  enc_d_model: 768
+  enc_nhead: 8
+  enc_dropout: 0.1
+  enc_self_depth: 6
+  enc_cross_depth: 2
+  latent_len: 48
+  learnable_latent: true
+  dec_d_model: 768
+  dec_nhead: 8
+  dec_dropout: 0.1
+  mem_self_depth: 2
+  face_cross_depth: 6
+  edge_cross_depth: 6
+  use_mem_pos: false
+  use_mem_sa: true
+  use_softplus: false
+  use_sin: false
+  latent_dim: 32
+  w_kl: 0.00005
+  w_num_face: 1.0
+  w_num_edge: 0.7
+  w_adj_face: 5.0
+  w_face_pos: 28.0
+  w_edge_bbox: 22.0
+  w_edge_corners: 20.0
+  w_face_z: 20.0
+  w_edge_z: 16.0

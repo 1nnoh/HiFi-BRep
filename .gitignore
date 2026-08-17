@@ -1,0 +1,64 @@
+# Python caches and environments
+__pycache__/
+*.py[cod]
+*.so
+*.log
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editors and local configuration
+.idea/
+.vscode/
+.env
+.env.*
+!.env.example
+
+# Checkpoints and experiment artifacts
+checkpoints/
+weights/
+logs/
+outputs/
+gen_datas/
+exports/
+wandb/
+tensorboard/
+origin_sample/
+optimize_sample/
+latent_vis/
+backup/
+
+# Private datasets and machine-specific manifests
+/data/
+datasets/**/*.json
+datasets/**/*.jsonl
+datasets/**/*.npy
+datasets/**/*.npz
+datasets/**/*.pkl
+!datasets/manifests/**/*.json
+
+# Generated geometry and large archives
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.step
+*.stp
+*.stl
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+
+# Build and packaging output
+build/
+dist/
+*.egg-info/
+src/pointnet2/pointnet2_ops_lib/build/
+
+/paper/
