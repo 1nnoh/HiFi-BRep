@@ -21,7 +21,7 @@
 <p align="center">
   <a href="https://arxiv.org/abs/2608.16485"><img src="https://img.shields.io/badge/arXiv-2608.16485-b31b1b?logo=arxiv&amp;logoColor=white" alt="arXiv"></a>
   <a href="https://openaccess.thecvf.com/content/CVPR2026/html/Hou_HiFi-BRep_High-Fidelity_Latent_Representation_for_Robust_B-Rep_Generation_CVPR_2026_paper.html"><img src="https://img.shields.io/badge/CVPR-2026-3A6DA0" alt="CVPR 2026"></a>
-  <a href="https://huggingface.co/1nnoh/HiFi-BRep"><img src="https://img.shields.io/badge/-Hugging%20Face-FFD21E?logo=huggingface&amp;logoColor=000" alt="Hugging Face"></a>
+  <a href="https://huggingface.co/1nnoh/HiFi-BRep"><img src="https://img.shields.io/badge/-Hugging%20Face-FFD21E?logo=huggingface&amp;logoColor=white" alt="Hugging Face"></a>
   <a href="https://www.modelscope.cn/models/innohou/HiFi-BRep"><img src="https://img.shields.io/badge/-ModelScope-624AFF" alt="ModelScope"></a>
 </p>
 
