@@ -18,6 +18,12 @@
   <a href='http://kunzhou.net/' target='_blank'>Kun Zhou</a>
 </h4>
 
+<p align="center">
+  <a href="https://openaccess.thecvf.com/content/CVPR2026/html/Hou_HiFi-BRep_High-Fidelity_Latent_Representation_for_Robust_B-Rep_Generation_CVPR_2026_paper.html">CVPR 2026</a>
+  ·
+  <a href="https://arxiv.org/abs/2608.16485">arXiv</a>
+</p>
+
 ![HiFi-BRep teaser](assets/teaser.png)
 
 ## Installation
