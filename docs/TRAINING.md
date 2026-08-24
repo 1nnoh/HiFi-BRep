@@ -1,6 +1,6 @@
 # Training
 
-Training uses the fixed `train` and `val` splits described in [DATA.md](DATA.md). Supply trusted processed PKLs through `--data-root` before running the commands below.
+Training uses the fixed `train` and `val` splits described in [DATA.md](DATA.md). Download, extract, and validate one processed subset before running the commands below. The tracked from-scratch recipes cover ABC `abc-4-50` and DeepCAD `4-30`; the released DeepCAD `7-30` weights remain available for inference and evaluation, but this repository does not track a separate `7-30` training recipe.
 
 ## Released Full-VAE Checkpoints
 
@@ -23,8 +23,8 @@ hf download 1nnoh/HiFi-BRep \
 ModelScope:
 
 ```bash
-python -m pip install modelscope-hub==0.1.8
-modelscope download innohou/HiFi-BRep \
+python -m pip install modelscope-hub==0.2.0
+ms-hub download innohou/HiFi-BRep \
   --include "training/*/*.pt" \
   --local-dir checkpoints
 ```
@@ -53,6 +53,8 @@ When validation finds a new best checkpoint, the trainer also writes the selecte
 
 - ABC: `/runs/hifi-brep/abc-vae/artifacts/training/abc/hifi-brep-vae-4-50-ema.pt`
 - DeepCAD: `/runs/hifi-brep/deepcad-vae/artifacts/training/deepcad/hifi-brep-vae-4-30-online.pt`
+
+An update-limited VAE run such as `--max-train-steps 1` checks the training wiring only. It stops before best-validation selection and therefore does not emit this portable full-VAE artifact.
 
 ## Train the DiT
 

@@ -1,38 +1,84 @@
 # Data Preparation
 
-Training reads processed B-rep PKL files selected by the tracked dataset manifests. Processed PKLs are not distributed with this repository.
+Training reads processed B-rep PKL files selected by the manifests tracked in this code repository. The corresponding archive shards are distributed separately in the [HiFi-BRep ModelScope Dataset](https://www.modelscope.cn/datasets/innohou/HiFi-BRep).
 
-## Data Sources
+## Processed Subsets
 
-- ABC: [ABC Dataset](https://deep-geometry.github.io/abc-dataset/). The released preprocessor converts its STEP files to the required PKL format.
-- DeepCAD: [rundiwu/DeepCAD](https://github.com/rundiwu/DeepCAD). Supply processed PKLs whose relative paths match `datasets/manifests/deepcad-v1.json`; this repository does not include a raw DeepCAD-to-PKL converter.
+| Subset | Train | Validation | Test | Total | Download | Extracted | Same-volume peak |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| ABC v1 | 186,148 | 10,341 | 10,343 | 206,832 | 19.17 GB | 85.06 GB | 108.48 GB |
+| DeepCAD-aligned v1 | 83,612 | 6,709 | 0 | 90,321 | 5.87 GB | 29.12 GB | 36.45 GB |
 
-The upstream datasets remain subject to their own licenses and access terms.
+ABC v1 contains processed geometry from the [ABC Dataset](https://deep-geometry.github.io/abc-dataset/). DeepCAD-aligned v1 is the fixed historical HiFi-BRep DeepCAD ID split applied to ABC-derived processed B-reps; it is not the official DeepCAD CAD-sequence archive. The upstream geometry remains subject to the rights and terms of its original sources.
 
-## Fixed Splits
+The two subsets are independently downloadable. Their archive shards are not binary parts that need concatenation: extract every shard for one subset into the same parent directory.
 
-| Dataset | Train | Validation | Test | Selected PKLs | Manifest |
-| --- | ---: | ---: | ---: | ---: | --- |
-| ABC | 186,148 | 10,341 | 10,343 | 206,832 | `datasets/manifests/abc-v1.json` |
-| DeepCAD | 83,612 | 6,709 | 0 | 90,321 | `datasets/manifests/deepcad-v1.json` |
+## Download One Subset
 
-Training uses only the declared `train` and `val` splits. The paper reports 83,611 DeepCAD training models; repository runs use the 83,612 entries fixed by the tracked manifest.
+Install the ModelScope Hub CLI:
 
-## Validate Processed Data
+```bash
+python -m pip install modelscope-hub==0.2.0
+```
 
-Python pickle can execute code while loading. Use only PKLs that you created or obtained from a trusted source.
+Download DeepCAD-aligned v1:
+
+```bash
+ms-hub download innohou/HiFi-BRep \
+  --repo-type dataset \
+  --include "README.md" "data/deepcad/*.tar.gz" \
+  --local-dir ../HiFi-BRep-Dataset
+```
+
+Download ABC v1 instead:
+
+```bash
+ms-hub download innohou/HiFi-BRep \
+  --repo-type dataset \
+  --include "README.md" "data/abc/*.tar.gz" \
+  --local-dir ../HiFi-BRep-Dataset
+```
+
+To download the complete Dataset with Git LFS:
+
+```bash
+git lfs install
+git clone https://www.modelscope.cn/datasets/innohou/HiFi-BRep.git \
+  ../HiFi-BRep-Dataset
+```
+
+## Extract the Shards
+
+The output parent must not already contain the selected subset directory. For DeepCAD-aligned v1:
+
+```bash
+mkdir -p /data/hifi-brep
+for archive in ../HiFi-BRep-Dataset/data/deepcad/*.tar.gz; do
+  tar -xzf "$archive" -C /data/hifi-brep --no-same-owner || exit 1
+done
+```
+
+This creates `/data/hifi-brep/deepcad`. For ABC v1, replace `deepcad` with `abc`; the result is `/data/hifi-brep/abc`.
+
+Python pickle can execute code while loading. Download the PKLs only from the canonical Dataset repository and do not load modified copies from an untrusted source.
+
+## Validate Against the Canonical Manifest
+
+Run the validator from the HiFi-BRep code repository:
 
 ```bash
 python -m tools.validate_processed_dataset \
-  --data-root /data/hifi-brep/abc \
-  --manifest datasets/manifests/abc-v1.json
+  --data-root /data/hifi-brep/deepcad \
+  --manifest datasets/manifests/deepcad-v1.json
 ```
 
-The validator checks manifest and path completeness only: it verifies that every
-selected path exists and fails when a required file is missing. It does not load
-or validate PKL contents.
+For ABC v1, use `/data/hifi-brep/abc` and `datasets/manifests/abc-v1.json`. The validator checks that every selected path exists. The lean archive distribution does not install a separate provenance file, so `provenance_verified` is expected to be `false`; a missing required PKL still fails validation.
+
+After validation, follow [TRAINING.md](TRAINING.md) and pass the selected subset directory as `--data-root`.
 
 ## Build ABC PKLs from STEP
+
+The released preprocessor remains available for researchers who prefer to process official ABC STEP files locally:
 
 ```bash
 python -m preprocess.steps \
@@ -44,4 +90,4 @@ python -m preprocess.steps \
   --resume
 ```
 
-The preprocessor may produce more PKLs than the fixed subset. Training still selects samples exclusively through `datasets/manifests/abc-v1.json`.
+The preprocessor may produce more PKLs than ABC v1. Training still selects samples exclusively through `datasets/manifests/abc-v1.json`.
