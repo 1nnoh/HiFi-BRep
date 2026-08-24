@@ -1,7 +1,7 @@
 # HiFi-BRep: High-Fidelity Latent Representation for Robust B-Rep Generation
 
 <h4 align="center">
-  <a href='https://scholar.google.com/citations?user=IZbQymsAAAAJ&hl' target='_blank'>Junhao Hou</a>
+  <a href='https://1nnoh.github.io/' target='_blank'>Junhao Hou</a>
   ·
   <a href='' target='_blank'>Chenqi Luo</a>
   ·
