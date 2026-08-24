@@ -1,6 +1,6 @@
 # Training
 
-Training uses the fixed `train` and `val` splits described in [DATA.md](DATA.md). Download, extract, and validate one processed subset before running the commands below. The tracked from-scratch recipes cover ABC `abc-4-50` and DeepCAD `4-30`; the released DeepCAD `7-30` weights remain available for inference and evaluation, but this repository does not track a separate `7-30` training recipe.
+Training uses the fixed `train` and `val` splits described in [DATA.md](DATA.md). Public training recipes cover ABC (`abc-4-50`) and DeepCAD (`4-30`); `7-30` is provided for inference and evaluation only.
 
 ## Released Full-VAE Checkpoints
 
@@ -53,8 +53,6 @@ When validation finds a new best checkpoint, the trainer also writes the selecte
 
 - ABC: `/runs/hifi-brep/abc-vae/artifacts/training/abc/hifi-brep-vae-4-50-ema.pt`
 - DeepCAD: `/runs/hifi-brep/deepcad-vae/artifacts/training/deepcad/hifi-brep-vae-4-30-online.pt`
-
-An update-limited VAE run such as `--max-train-steps 1` checks the training wiring only. It stops before best-validation selection and therefore does not emit this portable full-VAE artifact.
 
 ## Train the DiT
 
