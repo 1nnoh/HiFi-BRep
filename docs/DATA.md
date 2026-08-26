@@ -22,29 +22,20 @@ data_root=/data/hifi-brep
 python -m pip install modelscope-hub==0.2.0
 ms-hub download innohou/HiFi-BRep \
   --repo-type dataset \
-  --include "data/${dataset}/*.tar.gz" \
+  --include \
+    "data/${dataset}/*.tar.gz" \
+    "manifests/${dataset}-v1.json" \
+    "release_manifest.json" \
+    "tools/extract_dataset.py" \
   --local-dir "$dataset_repo"
 
-target="$data_root/$dataset"
-if [ -e "$target" ] || [ -L "$target" ]; then
-  echo "Refusing to overwrite existing directory: $target" >&2
-  exit 1
-fi
+python "$dataset_repo/tools/extract_dataset.py" \
+  --repo-root "$dataset_repo" \
+  --subset "$dataset" \
+  --output "$data_root"
 
-archives=("$dataset_repo/data/$dataset"/*.tar.gz)
-if [ ! -f "${archives[0]}" ]; then
-  echo "No archives found for $dataset" >&2
-  exit 1
-fi
-
-mkdir -p "$data_root"
-for archive in "${archives[@]}"; do
-  tar -xzf "$archive" -C "$data_root" --no-same-owner
-done
-
-# provenance_verified=false is expected for the published archives.
 python -m tools.validate_processed_dataset \
-  --data-root "$target" \
+  --data-root "$data_root/$dataset" \
   --manifest "datasets/manifests/${dataset}-v1.json"
 ```
 
