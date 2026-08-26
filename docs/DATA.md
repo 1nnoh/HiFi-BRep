@@ -1,36 +1,54 @@
 # Data Preparation
 
-Training reads processed B-rep PKL files selected by the tracked dataset manifests. Processed PKLs are not distributed with this repository.
+Processed ABC and DeepCAD training data are available from the [HiFi-BRep ModelScope Dataset](https://www.modelscope.cn/datasets/innohou/HiFi-BRep).
 
-## Data Sources
+| Dataset | Train | Validation | Test | Total | Download | Extracted |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| ABC | 186,148 | 10,341 | 10,343 | 206,832 | 19.17 GB | 85.06 GB |
+| DeepCAD | 83,612 | 6,709 | 0 | 90,321 | 5.87 GB | 29.12 GB |
 
-- ABC: [ABC Dataset](https://deep-geometry.github.io/abc-dataset/). The released preprocessor converts its STEP files to the required PKL format.
-- DeepCAD: [rundiwu/DeepCAD](https://github.com/rundiwu/DeepCAD). Supply processed PKLs whose relative paths match `datasets/manifests/deepcad-v1.json`; this repository does not include a raw DeepCAD-to-PKL converter.
+## Download and Prepare
 
-The upstream datasets remain subject to their own licenses and access terms.
-
-## Fixed Splits
-
-| Dataset | Train | Validation | Test | Selected PKLs | Manifest |
-| --- | ---: | ---: | ---: | ---: | --- |
-| ABC | 186,148 | 10,341 | 10,343 | 206,832 | `datasets/manifests/abc-v1.json` |
-| DeepCAD | 83,612 | 6,709 | 0 | 90,321 | `datasets/manifests/deepcad-v1.json` |
-
-Training uses only the declared `train` and `val` splits. The paper reports 83,611 DeepCAD training models; repository runs use the 83,612 entries fixed by the tracked manifest.
-
-## Validate Processed Data
-
-Python pickle can execute code while loading. Use only PKLs that you created or obtained from a trusted source.
+Set `dataset=abc` to use ABC instead of DeepCAD. Replace `/path/to/HiFi-BRep` with the cloned repository path.
 
 ```bash
+cd /path/to/HiFi-BRep
+set -euo pipefail
+
+dataset=deepcad
+dataset_repo=../HiFi-BRep-Dataset
+data_root=/data/hifi-brep
+
+python -m pip install modelscope-hub==0.2.0
+ms-hub download innohou/HiFi-BRep \
+  --repo-type dataset \
+  --include "data/${dataset}/*.tar.gz" \
+  --local-dir "$dataset_repo"
+
+target="$data_root/$dataset"
+if [ -e "$target" ] || [ -L "$target" ]; then
+  echo "Refusing to overwrite existing directory: $target" >&2
+  exit 1
+fi
+
+archives=("$dataset_repo/data/$dataset"/*.tar.gz)
+if [ ! -f "${archives[0]}" ]; then
+  echo "No archives found for $dataset" >&2
+  exit 1
+fi
+
+mkdir -p "$data_root"
+for archive in "${archives[@]}"; do
+  tar -xzf "$archive" -C "$data_root" --no-same-owner
+done
+
+# provenance_verified=false is expected for the published archives.
 python -m tools.validate_processed_dataset \
-  --data-root /data/hifi-brep/abc \
-  --manifest datasets/manifests/abc-v1.json
+  --data-root "$target" \
+  --manifest "datasets/manifests/${dataset}-v1.json"
 ```
 
-The validator checks manifest and path completeness only: it verifies that every
-selected path exists and fails when a required file is missing. It does not load
-or validate PKL contents.
+Only load PKL files downloaded from the canonical ModelScope repository. After validation, continue with [TRAINING.md](TRAINING.md) and use `$data_root/$dataset` as `--data-root`.
 
 ## Build ABC PKLs from STEP
 
@@ -44,4 +62,4 @@ python -m preprocess.steps \
   --resume
 ```
 
-The preprocessor may produce more PKLs than the fixed subset. Training still selects samples exclusively through `datasets/manifests/abc-v1.json`.
+The preprocessor may produce additional PKLs; training selects only paths listed in `datasets/manifests/abc-v1.json`.

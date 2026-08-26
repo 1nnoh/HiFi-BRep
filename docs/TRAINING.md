@@ -1,6 +1,6 @@
 # Training
 
-Training uses the fixed `train` and `val` splits described in [DATA.md](DATA.md). Supply trusted processed PKLs through `--data-root` before running the commands below.
+Training uses the fixed `train` and `val` splits described in [DATA.md](DATA.md). Public training recipes cover ABC (`abc-4-50`) and DeepCAD (`4-30`); `7-30` is provided for inference and evaluation only.
 
 ## Released Full-VAE Checkpoints
 
@@ -23,8 +23,8 @@ hf download 1nnoh/HiFi-BRep \
 ModelScope:
 
 ```bash
-python -m pip install modelscope-hub==0.1.8
-modelscope download innohou/HiFi-BRep \
+python -m pip install modelscope-hub==0.2.0
+ms-hub download innohou/HiFi-BRep \
   --include "training/*/*.pt" \
   --local-dir checkpoints
 ```

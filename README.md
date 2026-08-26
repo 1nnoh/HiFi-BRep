@@ -57,8 +57,8 @@ hf download 1nnoh/HiFi-BRep \
 ModelScope:
 
 ```bash
-python -m pip install modelscope-hub==0.1.8
-modelscope download innohou/HiFi-BRep \
+python -m pip install modelscope-hub==0.2.0
+ms-hub download innohou/HiFi-BRep \
   --include "deepcad/*.pt" "abc/*.pt" \
   --local-dir checkpoints
 ```
@@ -81,7 +81,7 @@ See [docs/EVALUATION.md](docs/EVALUATION.md) for the evaluation protocol, comman
 
 ## Data and Training
 
-- [docs/DATA.md](docs/DATA.md) describes the fixed dataset splits and ABC STEP preprocessing. Processed PKLs are not distributed with this repository.
+- Processed [ABC and DeepCAD datasets](https://www.modelscope.cn/datasets/innohou/HiFi-BRep) are available on ModelScope. See [docs/DATA.md](docs/DATA.md) for download and preparation commands.
 - [docs/TRAINING.md](docs/TRAINING.md) provides the VAE-to-DiT training commands, released full-VAE checkpoints, resume usage, and automatic inference-weight outputs.
 
 ## Acknowledgements
