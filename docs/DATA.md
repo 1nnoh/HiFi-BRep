@@ -9,9 +9,10 @@ Processed ABC and DeepCAD training data are available from the [HiFi-BRep ModelS
 
 ## Download and Prepare
 
-Run the following commands from the HiFi-BRep repository. Set `dataset=abc` to use ABC instead of DeepCAD.
+Set `dataset=abc` to use ABC instead of DeepCAD. Replace `/path/to/HiFi-BRep` with the cloned repository path.
 
 ```bash
+cd /path/to/HiFi-BRep
 set -euo pipefail
 
 dataset=deepcad
