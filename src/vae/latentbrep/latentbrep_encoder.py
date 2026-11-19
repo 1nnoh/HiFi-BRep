@@ -66,8 +66,13 @@ class EncoderATPBiLatent(nn.Module):
         use_soft_nonadj: bool = False,
         learnable_latent: bool = True,
         nonadj_bias: float = -6.0,
+        cross_update_mode: str = "serial",
     ) -> None:
         super().__init__()
+        if cross_update_mode not in ("serial", "parallel"):
+            raise ValueError("cross_update_mode must be 'serial' or 'parallel'.")
+        if cross_update_mode == "parallel":
+            self.register_buffer("_parallel_cross_marker", torch.ones((), dtype=torch.uint8))
         self.max_face = max_face
         self.max_edge = max_face * 3
         self.d_model = d_model
@@ -100,7 +105,10 @@ class EncoderATPBiLatent(nn.Module):
 
         self.bimodal_blocks = nn.ModuleList(
             [
-                BiModalBlock(d_model=d_model, nhead=nhead, dropout=dropout)
+                BiModalBlock(
+                    d_model=d_model, nhead=nhead, dropout=dropout,
+                    cross_update_mode=cross_update_mode,
+                )
                 for _ in range(enc_self_depth)
             ]
         )

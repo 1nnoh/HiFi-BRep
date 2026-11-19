@@ -64,8 +64,13 @@ class DecoderBiSP(nn.Module):
         latent_len: int = 48,
         use_softplus: bool = False,
         use_sin: bool = False,
+        cross_update_mode: str = "serial",
     ) -> None:
         super().__init__()
+        if cross_update_mode not in ("serial", "parallel"):
+            raise ValueError("cross_update_mode must be 'serial' or 'parallel'.")
+        if cross_update_mode == "parallel":
+            self.register_buffer("_parallel_cross_marker", torch.ones((), dtype=torch.uint8))
         self.max_face = max_face
         self.max_edge = max_face * 3
         self.d_model = d_model
@@ -181,7 +186,10 @@ class DecoderBiSP(nn.Module):
         )
         self.dec_blocks = nn.ModuleList(
             [
-                DecBiBlock(d_model=d_model, nhead=nhead, dropout=dropout)
+                DecBiBlock(
+                    d_model=d_model, nhead=nhead, dropout=dropout,
+                    cross_update_mode=cross_update_mode,
+                )
                 for _ in range(dec_depth)
             ]
         )

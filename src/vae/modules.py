@@ -95,8 +95,17 @@ class SDPA(nn.Module):
 class BiModalBlock(nn.Module):
     """Apply masked self- and cross-attention to face and edge tokens."""
 
-    def __init__(self, d_model: int, nhead: int, dropout: float = 0.1) -> None:
+    def __init__(
+        self,
+        d_model: int,
+        nhead: int,
+        dropout: float = 0.1,
+        cross_update_mode: str = "serial",
+    ) -> None:
         super().__init__()
+        if cross_update_mode not in ("serial", "parallel"):
+            raise ValueError("cross_update_mode must be 'serial' or 'parallel'.")
+        self.cross_update_mode = cross_update_mode
         self.norm_s1 = nn.LayerNorm(d_model)
         self.norm_e1 = nn.LayerNorm(d_model)
         self.sa_s = SDPA(d_model, nhead, dropout)
@@ -199,16 +208,19 @@ class BiModalBlock(nn.Module):
             ),
         ).unsqueeze(1)
 
+        surface_old = surface_tokens
         surface_tokens = surface_tokens + self.x_s_from_e(
             self.norm_s2q(surface_tokens),
             self.norm_s2k(edge_tokens),
             self.norm_s2k(edge_tokens),
             attn_mask=edge_to_surface_mask,
         )
+        # Parallel cross-attention reads the state before either cross update.
+        surface_keys = surface_old if self.cross_update_mode == "parallel" else surface_tokens
         edge_tokens = edge_tokens + self.x_e_from_s(
             self.norm_e2q(edge_tokens),
-            self.norm_e2k(surface_tokens),
-            self.norm_e2k(surface_tokens),
+            self.norm_e2k(surface_keys),
+            self.norm_e2k(surface_keys),
             attn_mask=surface_to_edge_mask,
         )
         surface_tokens = surface_tokens + self.ffn_s(self.norm_s3(surface_tokens))
@@ -219,8 +231,17 @@ class BiModalBlock(nn.Module):
 class DecBiBlock(nn.Module):
     """Decode coupled face and edge tokens against the latent memory."""
 
-    def __init__(self, d_model: int, nhead: int, dropout: float = 0.1) -> None:
+    def __init__(
+        self,
+        d_model: int,
+        nhead: int,
+        dropout: float = 0.1,
+        cross_update_mode: str = "serial",
+    ) -> None:
         super().__init__()
+        if cross_update_mode not in ("serial", "parallel"):
+            raise ValueError("cross_update_mode must be 'serial' or 'parallel'.")
+        self.cross_update_mode = cross_update_mode
         self.n_fm_q = nn.LayerNorm(d_model)
         self.n_fm_k = nn.LayerNorm(d_model)
         self.n_em_q = nn.LayerNorm(d_model)
@@ -330,16 +351,18 @@ class DecBiBlock(nn.Module):
             edge_count,
             face_count,
         )
+        face_old = face_tokens
         face_tokens = face_tokens + self.ca_f_from_e(
             self.n_fq(face_tokens),
             self.n_ek(edge_tokens),
             self.n_ek(edge_tokens),
             attn_mask=allow_edge_keys,
         )
+        face_keys = face_old if self.cross_update_mode == "parallel" else face_tokens
         edge_tokens = edge_tokens + self.ca_e_from_f(
             self.n_eq(edge_tokens),
-            self.n_fk(face_tokens),
-            self.n_fk(face_tokens),
+            self.n_fk(face_keys),
+            self.n_fk(face_keys),
             attn_mask=allow_face_keys,
         )
         face_tokens = face_tokens + self.ffn_f(self.n_ff(face_tokens))

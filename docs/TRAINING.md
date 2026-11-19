@@ -49,6 +49,14 @@ CUDA_VISIBLE_DEVICES=0,1 accelerate launch --num_processes 2 -m train.vae \
   --output-dir /runs/hifi-brep/deepcad-vae
 ```
 
+### Optional parallel cross-attention
+
+Both VAE recipes default to `model.bidirectional_cross_update: serial` for
+released checkpoint compatibility. Set it to `parallel` so both face/edge
+cross-attention directions read the same pre-update tokens in Encoder and
+Decoder. Train from scratch in a new output directory when enabling it;
+state dictionary markers reject strict loading across attention modes.
+
 When validation finds a new best checkpoint, the trainer also writes the selected full-VAE weight to:
 
 - ABC: `/runs/hifi-brep/abc-vae/artifacts/training/abc/hifi-brep-vae-4-50-ema.pt`

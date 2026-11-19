@@ -21,6 +21,7 @@ class LatentBiSPBrepVAE(nn.Module):
         enc_dropout: float = 0.1,
         enc_self_depth: int = 2,
         enc_cross_depth: int = 2,
+        bidirectional_cross_update: str = "serial",
         latent_len: int = 16,
         learnable_latent: bool = True,
         dec_d_model: int = 512,
@@ -62,6 +63,7 @@ class LatentBiSPBrepVAE(nn.Module):
             use_pos_emb=True,
             learnable_latent=learnable_latent,
             use_sin=use_sin,
+            cross_update_mode=bidirectional_cross_update,
         )
         self.quant_proj = nn.Linear(enc_d_model, 2 * latent_dim)
         self.decoder = DecoderBiSP(
@@ -78,6 +80,7 @@ class LatentBiSPBrepVAE(nn.Module):
             use_mem_sa=use_mem_sa,
             use_softplus=use_softplus,
             use_sin=use_sin,
+            cross_update_mode=bidirectional_cross_update,
         )
         self.mse = MaskedMSELoss(reduction="batch")
         self.adj_loss = RowSoftmaxTwoPeakLoss(reduction="batch")

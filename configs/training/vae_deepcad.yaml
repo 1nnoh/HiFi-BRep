@@ -54,6 +54,7 @@ checkpoint:
   milestone_every_epochs: 100
 
 model:
+  bidirectional_cross_update: serial # Set parallel to read old tokens in both directions.
   max_face: 50
   enc_d_model: 768
   enc_nhead: 8
