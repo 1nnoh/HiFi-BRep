@@ -27,6 +27,7 @@ DECODER_CONFIG_FIELDS = frozenset(
         "latent_len",
         "use_softplus",
         "use_sin",
+        "cross_update_mode",
     }
 )
 SAMPLING_CONFIG_FIELDS = frozenset(

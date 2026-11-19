@@ -49,6 +49,37 @@ CUDA_VISIBLE_DEVICES=0,1 accelerate launch --num_processes 2 -m train.vae \
   --output-dir /runs/hifi-brep/deepcad-vae
 ```
 
+### Optional VAE stability settings
+
+Both `vae_deepcad.yaml` and `vae_abc.yaml` expose these options under `model`:
+
+```yaml
+model:
+  bidirectional_cross_update: serial
+  encoder_layer_scale: false
+  encoder_bimodal_layer_scale_init: 0.1
+  encoder_latent_layer_scale_init: 0.01
+```
+
+Defaults preserve compatibility with released checkpoints. Set
+`bidirectional_cross_update: parallel` so both face/edge cross-attention
+directions read the same pre-update tokens in Encoder and Decoder. Set
+`encoder_layer_scale: true` to scale Encoder residuals with learnable per-channel
+parameters (`x + gamma * update`): BiModal and tail FFN scales start at `0.1`,
+and latent pooling branch scales at `0.01`. The two switches are independent.
+When enabling either option, train from scratch in a new output directory;
+released checkpoints cannot be strictly loaded into the changed structure.
+Existing runs using `--resume` must retain their original recipe because
+configuration hashes are checked. Long-run stability still requires validation.
+
+To test DeepCAD with both options enabled for up to 200,000 updates, run
+`CUDA_VISIBLE_DEVICES=0,1 bash tools/test_deepcad_stability.sh` in the training
+environment. The script locates local DeepCAD data (or the nearby reference
+checkout), creates a new run under `outputs/runs`, and generates a temporary
+recipe without changing the defaults. Optional arguments are `DATA_ROOT OUTPUT_DIR`.
+Set `MAX_TRAIN_STEPS` to change the limit, or append `--dry-run` to check the
+command without training.
+
 When validation finds a new best checkpoint, the trainer also writes the selected full-VAE weight to:
 
 - ABC: `/runs/hifi-brep/abc-vae/artifacts/training/abc/hifi-brep-vae-4-50-ema.pt`
