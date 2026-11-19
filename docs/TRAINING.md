@@ -72,6 +72,14 @@ released checkpoints cannot be strictly loaded into the changed structure.
 Existing runs using `--resume` must retain their original recipe because
 configuration hashes are checked. Long-run stability still requires validation.
 
+To test DeepCAD with both options enabled for up to 200,000 updates, run
+`CUDA_VISIBLE_DEVICES=0,1 bash tools/test_deepcad_stability.sh` in the training
+environment. The script locates local DeepCAD data (or the nearby reference
+checkout), creates a new run under `outputs/runs`, and generates a temporary
+recipe without changing the defaults. Optional arguments are `DATA_ROOT OUTPUT_DIR`.
+Set `MAX_TRAIN_STEPS` to change the limit, or append `--dry-run` to check the
+command without training.
+
 When validation finds a new best checkpoint, the trainer also writes the selected full-VAE weight to:
 
 - ABC: `/runs/hifi-brep/abc-vae/artifacts/training/abc/hifi-brep-vae-4-50-ema.pt`
