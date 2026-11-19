@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -101,11 +103,26 @@ class BiModalBlock(nn.Module):
         nhead: int,
         dropout: float = 0.1,
         cross_update_mode: str = "serial",
+        layer_scale_init: float | None = None,
     ) -> None:
         super().__init__()
         if cross_update_mode not in ("serial", "parallel"):
             raise ValueError("cross_update_mode must be 'serial' or 'parallel'.")
         self.cross_update_mode = cross_update_mode
+        if layer_scale_init is not None and (
+            not math.isfinite(layer_scale_init) or layer_scale_init <= 0
+        ):
+            raise ValueError("layer_scale_init must be finite and positive.")
+        for name in (
+            "gamma_surface_self", "gamma_edge_self",
+            "gamma_surface_cross", "gamma_edge_cross",
+            "gamma_surface_ffn", "gamma_edge_ffn",
+        ):
+            self.register_parameter(
+                name, None if layer_scale_init is None else nn.Parameter(
+                    torch.full((d_model,), float(layer_scale_init))
+                ),
+            )
         self.norm_s1 = nn.LayerNorm(d_model)
         self.norm_e1 = nn.LayerNorm(d_model)
         self.sa_s = SDPA(d_model, nhead, dropout)
@@ -133,6 +150,10 @@ class BiModalBlock(nn.Module):
             nn.Linear(4 * d_model, d_model),
         )
 
+    @staticmethod
+    def _scale_update(update: torch.Tensor, gamma: nn.Parameter | None) -> torch.Tensor:
+        return update if gamma is None else update * gamma.to(dtype=update.dtype)
+
     def forward(
         self,
         surface_tokens: torch.Tensor,
@@ -158,18 +179,20 @@ class BiModalBlock(nn.Module):
             edge_count,
             edge_count,
         )
-        surface_tokens = surface_tokens + self.sa_s(
+        surface_update = self.sa_s(
             self.norm_s1(surface_tokens),
             self.norm_s1(surface_tokens),
             self.norm_s1(surface_tokens),
             attn_mask=surface_mask,
         )
-        edge_tokens = edge_tokens + self.sa_e(
+        surface_tokens = surface_tokens + self._scale_update(surface_update, self.gamma_surface_self)
+        edge_update = self.sa_e(
             self.norm_e1(edge_tokens),
             self.norm_e1(edge_tokens),
             self.norm_e1(edge_tokens),
             attn_mask=edge_mask,
         )
+        edge_tokens = edge_tokens + self._scale_update(edge_update, self.gamma_edge_self)
 
         adjacency = adj_face.bool()
         allow_edge_to_surface = adjacency.transpose(1, 2)
@@ -209,22 +232,28 @@ class BiModalBlock(nn.Module):
         ).unsqueeze(1)
 
         surface_old = surface_tokens
-        surface_tokens = surface_tokens + self.x_s_from_e(
+        surface_update = self.x_s_from_e(
             self.norm_s2q(surface_tokens),
             self.norm_s2k(edge_tokens),
             self.norm_s2k(edge_tokens),
             attn_mask=edge_to_surface_mask,
         )
+        surface_tokens = surface_tokens + self._scale_update(surface_update, self.gamma_surface_cross)
         # Parallel cross-attention reads the state before either cross update.
         surface_keys = surface_old if self.cross_update_mode == "parallel" else surface_tokens
-        edge_tokens = edge_tokens + self.x_e_from_s(
+        edge_update = self.x_e_from_s(
             self.norm_e2q(edge_tokens),
             self.norm_e2k(surface_keys),
             self.norm_e2k(surface_keys),
             attn_mask=surface_to_edge_mask,
         )
-        surface_tokens = surface_tokens + self.ffn_s(self.norm_s3(surface_tokens))
-        edge_tokens = edge_tokens + self.ffn_e(self.norm_e3(edge_tokens))
+        edge_tokens = edge_tokens + self._scale_update(edge_update, self.gamma_edge_cross)
+        surface_tokens = surface_tokens + self._scale_update(
+            self.ffn_s(self.norm_s3(surface_tokens)), self.gamma_surface_ffn,
+        )
+        edge_tokens = edge_tokens + self._scale_update(
+            self.ffn_e(self.norm_e3(edge_tokens)), self.gamma_edge_ffn,
+        )
         return surface_tokens, edge_tokens
 
 

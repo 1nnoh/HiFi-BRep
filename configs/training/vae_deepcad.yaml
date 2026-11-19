@@ -55,6 +55,9 @@ checkpoint:
 
 model:
   bidirectional_cross_update: serial # Set parallel to read old tokens in both directions.
+  encoder_layer_scale: false # Enable learnable Encoder residual scales for a new run.
+  encoder_bimodal_layer_scale_init: 0.1 # BiModal residuals and latent tail FFN.
+  encoder_latent_layer_scale_init: 0.01 # Each residual inside latent pooling.
   max_face: 50
   enc_d_model: 768
   enc_nhead: 8

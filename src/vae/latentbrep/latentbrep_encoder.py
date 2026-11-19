@@ -47,6 +47,46 @@ class MLP(nn.Module):
         return self.net(value)
 
 
+class LayerScaleTransformerDecoderLayer(nn.TransformerDecoderLayer):
+    """Pre-norm latent pooling with a separate scale per residual branch."""
+
+    def __init__(self, *args: object, layer_scale_init: float, **kwargs: object) -> None:
+        if not math.isfinite(layer_scale_init) or layer_scale_init <= 0:
+            raise ValueError("layer_scale_init must be finite and positive.")
+        super().__init__(*args, **kwargs)
+        if not self.norm_first:
+            raise ValueError("LayerScale requires norm_first=True.")
+        dimension = self.norm1.normalized_shape[0]
+        for name in ("gamma_self_attention", "gamma_memory_attention", "gamma_ffn"):
+            self.register_parameter(
+                name, nn.Parameter(torch.full((dimension,), float(layer_scale_init)))
+            )
+
+    def forward(
+        self,
+        tgt: torch.Tensor,
+        memory: torch.Tensor,
+        tgt_mask: torch.Tensor | None = None,
+        memory_mask: torch.Tensor | None = None,
+        tgt_key_padding_mask: torch.Tensor | None = None,
+        memory_key_padding_mask: torch.Tensor | None = None,
+        tgt_is_causal: bool = False,
+        memory_is_causal: bool = False,
+    ) -> torch.Tensor:
+        x = tgt
+        update = self._sa_block(
+            self.norm1(x), tgt_mask, tgt_key_padding_mask, tgt_is_causal,
+        )
+        x = x + update * self.gamma_self_attention.to(dtype=update.dtype)
+        update = self._mha_block(
+            self.norm2(x), memory, memory_mask,
+            memory_key_padding_mask, memory_is_causal,
+        )
+        x = x + update * self.gamma_memory_attention.to(dtype=update.dtype)
+        update = self._ff_block(self.norm3(x))
+        return x + update * self.gamma_ffn.to(dtype=update.dtype)
+
+
 class EncoderATPBiLatent(nn.Module):
     """Encode padded face/edge geometry into a fixed latent token sequence."""
 
@@ -67,10 +107,17 @@ class EncoderATPBiLatent(nn.Module):
         learnable_latent: bool = True,
         nonadj_bias: float = -6.0,
         cross_update_mode: str = "serial",
+        encoder_layer_scale: bool = False,
+        bimodal_layer_scale_init: float = 0.1,
+        latent_layer_scale_init: float = 0.01,
     ) -> None:
         super().__init__()
         if cross_update_mode not in ("serial", "parallel"):
             raise ValueError("cross_update_mode must be 'serial' or 'parallel'.")
+        if encoder_layer_scale:
+            for value in (bimodal_layer_scale_init, latent_layer_scale_init):
+                if not math.isfinite(value) or value <= 0:
+                    raise ValueError("LayerScale initial values must be finite and positive.")
         if cross_update_mode == "parallel":
             self.register_buffer("_parallel_cross_marker", torch.ones((), dtype=torch.uint8))
         self.max_face = max_face
@@ -108,6 +155,7 @@ class EncoderATPBiLatent(nn.Module):
                 BiModalBlock(
                     d_model=d_model, nhead=nhead, dropout=dropout,
                     cross_update_mode=cross_update_mode,
+                    layer_scale_init=bimodal_layer_scale_init if encoder_layer_scale else None,
                 )
                 for _ in range(enc_self_depth)
             ]
@@ -127,13 +175,19 @@ class EncoderATPBiLatent(nn.Module):
                 self.register_buffer("pe", encoding)
             self.mlp_latent = MLP(256, d_model, hidden=mlp_hidden, dropout=dropout)
 
-        decoder_layer = nn.TransformerDecoderLayer(
+        layer_type = (
+            LayerScaleTransformerDecoderLayer
+            if encoder_layer_scale else nn.TransformerDecoderLayer
+        )
+        layer_kwargs = {"layer_scale_init": latent_layer_scale_init} if encoder_layer_scale else {}
+        decoder_layer = layer_type(
             d_model=d_model,
             nhead=nhead,
             norm_first=True,
             batch_first=True,
             dim_feedforward=min(d_model * 4, 1024),
             dropout=dropout,
+            **layer_kwargs,
         )
         self.cross_attn = nn.TransformerDecoder(
             decoder_layer,
@@ -149,6 +203,12 @@ class EncoderATPBiLatent(nn.Module):
             nn.Linear(d_model * 4, d_model),
         )
         self._reset_parameters()
+
+        self.register_parameter(
+            "gamma_cross_ffn",
+            nn.Parameter(torch.full((d_model,), float(bimodal_layer_scale_init)))
+            if encoder_layer_scale else None,
+        )
 
     def _reset_parameters(self) -> None:
         for module in self.cross_attn.modules():
@@ -261,7 +321,10 @@ class EncoderATPBiLatent(nn.Module):
             memory_key_padding_mask=~context_valid,
         )
         latent = self.cross_norm_o(latent + queries)
-        latent = latent + self.cross_ffn(latent)
+        update = self.cross_ffn(latent)
+        if self.gamma_cross_ffn is not None:
+            update = update * self.gamma_cross_ffn.to(dtype=update.dtype)
+        latent = latent + update
         return {
             "latent_tokens": latent,
             "surf_tokens": surface_tokens,

@@ -22,6 +22,9 @@ class LatentBiSPBrepVAE(nn.Module):
         enc_self_depth: int = 2,
         enc_cross_depth: int = 2,
         bidirectional_cross_update: str = "serial",
+        encoder_layer_scale: bool = False,
+        encoder_bimodal_layer_scale_init: float = 0.1,
+        encoder_latent_layer_scale_init: float = 0.01,
         latent_len: int = 16,
         learnable_latent: bool = True,
         dec_d_model: int = 512,
@@ -64,6 +67,9 @@ class LatentBiSPBrepVAE(nn.Module):
             learnable_latent=learnable_latent,
             use_sin=use_sin,
             cross_update_mode=bidirectional_cross_update,
+            encoder_layer_scale=encoder_layer_scale,
+            bimodal_layer_scale_init=encoder_bimodal_layer_scale_init,
+            latent_layer_scale_init=encoder_latent_layer_scale_init,
         )
         self.quant_proj = nn.Linear(enc_d_model, 2 * latent_dim)
         self.decoder = DecoderBiSP(

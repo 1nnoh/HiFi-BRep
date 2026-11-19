@@ -49,13 +49,28 @@ CUDA_VISIBLE_DEVICES=0,1 accelerate launch --num_processes 2 -m train.vae \
   --output-dir /runs/hifi-brep/deepcad-vae
 ```
 
-### Optional parallel cross-attention
+### Optional VAE stability settings
 
-Both VAE recipes default to `model.bidirectional_cross_update: serial` for
-released checkpoint compatibility. Set it to `parallel` so both face/edge
-cross-attention directions read the same pre-update tokens in Encoder and
-Decoder. Train from scratch in a new output directory when enabling it;
-state dictionary markers reject strict loading across attention modes.
+Both `vae_deepcad.yaml` and `vae_abc.yaml` expose these options under `model`:
+
+```yaml
+model:
+  bidirectional_cross_update: serial
+  encoder_layer_scale: false
+  encoder_bimodal_layer_scale_init: 0.1
+  encoder_latent_layer_scale_init: 0.01
+```
+
+Defaults preserve compatibility with released checkpoints. Set
+`bidirectional_cross_update: parallel` so both face/edge cross-attention
+directions read the same pre-update tokens in Encoder and Decoder. Set
+`encoder_layer_scale: true` to scale Encoder residuals with learnable per-channel
+parameters (`x + gamma * update`): BiModal and tail FFN scales start at `0.1`,
+and latent pooling branch scales at `0.01`. The two switches are independent.
+When enabling either option, train from scratch in a new output directory;
+released checkpoints cannot be strictly loaded into the changed structure.
+Existing runs using `--resume` must retain their original recipe because
+configuration hashes are checked. Long-run stability still requires validation.
 
 When validation finds a new best checkpoint, the trainer also writes the selected full-VAE weight to:
 
